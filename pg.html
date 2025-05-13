@@ -414,6 +414,34 @@
     
     
     <!-- ========== REDTRACK SCRIPT ========== -->
+
+      <!-- ▸ FIX-COOKIE — cria rtkclickid-store a partir do gclid/ref_id ---- -->
+<script>
+(function () {
+  const CK = 'rtkclickid-store';
+
+  /* Verifica se o cookie já existe */
+  const have = document.cookie.split('; ').some(c => c.startsWith(CK + '='));
+  if (have) return;                               // nada a fazer
+
+  /* Procura parâmetros que contenham o click-id */
+  const p   = new URLSearchParams(location.search);
+  const cid = p.get('rtkcid') || p.get('ref_id') || p.get('gclid');
+
+  if (!cid) {
+    console.warn('Fix-cookie: gclid / ref_id não encontrado na URL.');
+    return;
+  }
+
+  /* Grava cookie por 90 dias no domínio do unilpclick */
+  const maxAge = 90 * 24 * 60 * 60;               // 90 dias
+  document.cookie = CK + '=' + cid + '; path=/; max-age=' + maxAge;
+
+  console.log('Fix-cookie: gravado rtkclickid-store =', cid);
+})();
+</script>
+<!-- ▸ /FIX-COOKIE ---------------------------------------------------- -->
+
     
    <!-- ====== TRACKING – RedTrack (cookie)  x  ConverteAI ====== -->
 <script>
