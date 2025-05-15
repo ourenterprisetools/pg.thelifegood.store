@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discover the Breakthrough – Watch Now</title>
+    <style>
+      :root {
+        --brand-color: #0d4c94;
+        --accent-color: #063b81;
+        --text-color: #0e182e;
+        --bg-color: #ecebec;
+      }
+
+      /* ----------------------- Base / Reset ----------------------- */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Roboto", Arial, sans-serif;
+        background: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.5;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      /* ----------------------- Layout ----------------------- */
+      main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1rem;
+        text-align: center;
+      }
+
+      /* On small screens, keep hero full‑viewport so footer moves below the fold */
+      @media (max-width: 480px) {
+        main {
+          min-height: 100vh;
+        }
+      }
+
+      /* ----------------------- Hero Card ----------------------- */
+      .hero {
+        background: #fff;
+        padding: 1.75rem 1.25rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        width: 100%;
+        max-width: 26rem;
+        margin-inline: auto;
+      }
+
+      @media (min-width: 640px) {
+        .hero {
+          padding: 2.5rem 2rem;
+          max-width: 40rem;
+        }
+      }
+
+      h1 {
+        font-size: clamp(1.35rem, 4.8vw, 2rem);
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        line-height: 1.35;
+      }
+
+      /* ----------------------- Call-to-Action Button ----------------------- */
+      .cta-button {
+        display: inline-block;
+        background: var(--brand-color);
+        color: #fff;
+        padding: 0.9rem 1rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+        border: none;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        transition: background 0.2s ease-in-out, transform 0.2s ease-in-out;
+        width: 100%;
+        max-width: 18rem;
+      }
+
+      @media (min-width: 480px) {
+        .cta-button {
+          width: auto;
+          padding: 1rem 2.5rem;
+        }
+      }
+
+      .cta-button:hover,
+      .cta-button:focus {
+        background: var(--accent-color);
+        transform: translateY(-2px);
+      }
+
+      /* ----------------------- Footer ----------------------- */
+      footer {
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        padding: 1.25rem 1rem;
+        font-size: 0.68rem;
+        color: #4b5563;
+        line-height: 1.35;
+      }
+
+      footer p {
+        margin-bottom: 0.75rem;
+      }
+      footer a {
+        color: var(--brand-color);
+        text-decoration: none;
+      }
+      footer a:hover {
+        text-decoration: underline;
+      }
+
+      details {
+        margin-top: 0.75rem;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+        list-style: none;
+      }
+      summary::marker {
+        display: none;
+      }
+    </style>
+
+    <!-- TRACKING SCRIPT START -->
+    <script>
+      function getURLParameters() {
+        const params = {};
+        const queryString = window.location.search.substring(1);
+        const regex = /([^&=]+)=([^&]*)/g;
+        let m;
+        while ((m = regex.exec(queryString))) {
+          params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+        }
+        return params;
+      }
+      function appendParamsToLinks() {
+        const params = getURLParameters();
+        const links = document.querySelectorAll("a[href]");
+        links.forEach((link) => {
+          const url = new URL(link.href);
+          for (const key in params) {
+            url.searchParams.set(key, params[key]);
+          }
+          link.href = url.toString();
+        });
+      }
+      window.onload = appendParamsToLinks;
+    </script>
+    <!-- TRACKING SCRIPT END -->
+  </head>
+  <body>
+    <main>
+      <div class="hero">
+        <h1>Experience the Simple Korean Ritual that’s Helping Thousands!</h1>
+
+        <a
+          href="https://staminaxpro.com/bc/l3"
+          class="cta-button"
+          role="button"
+          aria-label="Watch the presentation now"
+          >Watch&nbsp;Now</a
+        >
+      </div>
+    </main>
+
+    <!-- Footer remains visible after user scrolls -->
+    <footer>
+      <p>
+        This site is not a part of the Google™ website or Google Inc.
+        Additionally, this site is <strong>NOT</strong> endorsed by Google in
+        any way. Google™ is a trademark of Google, Inc.
+      </p>
+
+      <details>
+        <summary>FDA & Medical Disclaimer</summary>
+        <p>
+          Statements on this site have not been evaluated by the Food and Drug
+          Administration. Products referenced are not intended to diagnose,
+          treat, cure, or prevent any disease. Information provided is for
+          educational purposes only and is not a substitute for professional
+          medical advice. Always consult a qualified healthcare provider before
+          making changes to your diet, exercise, or supplement regimen.
+        </p>
+      </details>
+
+      <details>
+        <summary>Results Disclaimer</summary>
+        <p>
+          Individual results will vary. Testimonials, case studies, and examples
+          found on this page are results that have been forwarded to us by users
+          of our products and/or services and may not reflect the typical
+          purchaser’s experience, may not apply to the average person, and are
+          not intended to represent or guarantee that anyone will achieve the
+          same or similar results.
+        </p>
+      </details>
+
+      <p>
+        All trademarks referenced are the property of their respective owners.
+      </p>
+
+      <div class="policies">
+        <a href="#privacy-policy">Privacy&nbsp;Policy</a> |
+        <a href="#terms-of-service">Terms&nbsp;of&nbsp;Service</a> |
+        <a href="#contact-us">Contact&nbsp;Us</a>
+      </div>
+
+      <section id="privacy-policy">
+        <h2 style="font-size: 0.8rem; margin-top: 1rem">Privacy Policy</h2>
+        <p>
+          We respect your privacy and are committed to protecting your personal
+          information. Any data collected on this site (such as your email
+          address) will be used strictly to provide you with updates and
+          marketing information related to our products. We will never sell or
+          rent your information to third parties. You can unsubscribe from our
+          communications at any time by clicking the link in our emails or
+          contacting us at the address below.
+        </p>
+      </section>
+
+      <section id="terms-of-service">
+        <h2 style="font-size: 0.8rem; margin-top: 1rem">Terms of Service</h2>
+        <p>
+          By using this website, you agree to abide by the terms outlined
+          herein. You understand that the content provided is for informational
+          purposes only. We reserve the right to modify or discontinue any part
+          of this site without notice.
+        </p>
+      </section>
+
+      <section id="contact-us">
+        <h2 style="font-size: 0.8rem; margin-top: 1rem">Contact Us</h2>
+        <p>
+          HighPeak Media LLC<br />1234 Main Street, Suite 400<br />Miami, FL
+          33101, United States<br />Phone:&nbsp;(305)&nbsp;555-0123<br />Email:&nbsp;support@highpeakmedia.com
+        </p>
+      </section>
+
+      <p style="margin-top: 0.75rem">
+        © 2025 HighPeak Media LLC. All rights reserved.
+      </p>
+    </footer>
+  </body>
+</html>
