@@ -416,81 +416,61 @@
     <!-- ========== REDTRACK SCRIPT ========== -->
 
     
-  <!-- ========= GOOGLE / YOUTUBE TRACKING  (100 % genérico) ================= -->
+  <!-- ====== TRACKING – RedTrack (cookie)  x  ConverteAI – Google/YouTube ====== -->
 <script>
 (function () {
-
-  /* ── 1. Decide se é tráfego Google/YouTube ───────────────────────────── */
-  const qs = new URLSearchParams(location.search);
-
-  /*  ➜ dispara se existir QUALQUER uma dessas pistas  */
-  const isGoogle =
-        qs.has('gclid')   || qs.has('wbraid')   || qs.has('gbraid') ||   // clique real
-        qs.has('ref_id')  || qs.has('cmpid')   ||                    // param fixo da URL
-        (qs.get('utm_source')||'').toLowerCase()==='google';          // fallback
-
-  if (!isGoogle) return;          // não é Google/YouTube → sai sem fazer nada
-
-  /* ── 2. Garante o cookie “rtkclickid-store” ──────────────────────────── */
+  /* 1. Garante o cookie `rtkclickid-store` (gclid / wbraid / gbraid / ref_id) */
   const CK = 'rtkclickid-store';
-
-  function firstValid (...ids){
-    return ids.find(id => id && !id.includes('{') && !id.includes('%7B'));
+  if (!document.cookie.split('; ').some(c => c.startsWith(CK + '='))) {
+    const q  = new URLSearchParams(location.search);
+    const id = q.get('rtkcid') || q.get('ref_id') || q.get('gclid')
+             || q.get('wbraid') || q.get('gbraid');
+    if (id) {
+      document.cookie = CK + '=' + id + '; path=/; max-age=' + 90*24*60*60;
+      console.log('[Google/YT] cookie criado:', id);
+    } else {
+      console.warn('[Google/YT] nenhum click-id encontrado na URL');
+    }
   }
 
-  if (!document.cookie.split('; ').some(c=>c.startsWith(CK+'='))) {
-    const cid = firstValid(
-      qs.get('rtkcid'), qs.get('ref_id'),
-      qs.get('gclid'),  qs.get('wbraid'), qs.get('gbraid')
-    );
-    if (!cid){ console.warn('[Google] sem click-id válido na URL'); return; }
-
-    document.cookie = `${CK}=${cid}; path=/; max-age=${90*24*60*60}`;
-    console.log('[Google] cookie criado:', cid);
-  }
-
-  /* ── 3. Função genérica de postback ─────────────────────────────────── */
-  const getCid = () => {
-    const m = ('; '+document.cookie).match('; '+CK+'=([^;]*)'); return m && m[1];
-  };
-  const newId = () => Date.now().toString();
-
-  function send(type){
+  /* 2. Helper para disparar postbacks */
+  const getCid   = () => ( '; '+document.cookie )
+                       .match('; '+CK+'=([^;]*)')?.[1] || null;
+  const newEvId  = () => Date.now().toString();
+  function track(type){
     const cid = getCid();
-    if (!cid){ console.warn('[Google] sem cookie →', type); return; }
+    if (!cid) { console.warn('[Google/YT] sem cookie →', type); return; }
+
+    /* “VSL View” só 1× por click-id */
+    if (type === 'VSL View') {
+      const flag = 'vslView:' + cid;
+      if (localStorage.getItem(flag)) return;
+      localStorage.setItem(flag,'1');
+    }
 
     const url = 'https://track.thenew-health.online/postback'
-              + `?clickid=${encodeURIComponent(cid)}`
-              + `&rdtk_event_id=${newId()}`
-              + `&type=${encodeURIComponent(type)}`;
-
-    new Image().src = url;              // pixel
-    console.log('[Google] postback →', type);
+              + '?clickid='       + encodeURIComponent(cid)
+              + '&rdtk_event_id=' + newEvId()
+              + '&type='          + encodeURIComponent(type);
+    new Image().src = url;
+    console.log('[Google/YT] postback →', type);
   }
 
-  /* ── 4. “VSL View” uma única vez por click-id ───────────────────────── */
-  document.addEventListener('DOMContentLoaded', () => {
-    const cid = getCid(); if (!cid) return;
-    const key = 'vslView:'+cid;
-    if (!localStorage.getItem(key)){
-      send('VSL View');
-      localStorage.setItem(key,'1');
-    }
-  });
+  /* 3. Dispara “VSL View” ao carregar o DOM */
+  document.addEventListener('DOMContentLoaded', () => track('VSL View'));
 
-  /* ── 5. Replica todos os eventos do SmartPlayer ─────────────────────── */
+  /* 4. Replica todos os eventos emitidos pelo SmartPlayer */
   const valid = new Set([
     'VSL - Play','VSL - 3 View','VSL - 60 View','VSL - 120 View',
     'VSL - 300 View','VSL - Lead View','VSL - Pitch View'
   ]);
-
-  window.addEventListener('message', ev=>{
-    if (valid.has(ev.data)) send(ev.data);
+  window.addEventListener('message', ev => {
+    if (valid.has(ev.data)) track(ev.data);
   });
-
 })();
 </script>
-<!-- ========= /GOOGLE / YOUTUBE TRACKING ================================= -->
+<!-- ====== /TRACKING ======================================================= -->
+
 
   </body>
 </html>
