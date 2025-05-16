@@ -416,61 +416,147 @@
     <!-- ========== REDTRACK SCRIPT ========== -->
 
     
-  <!-- ====== TRACKING – RedTrack (cookie)  x  ConverteAI – Google/YouTube ====== -->
+  <!-- ====== TRACKING – RedTrack (YouTube / Google Ads)  =================== -->
 <script>
 (function () {
-  /* 1. Garante o cookie `rtkclickid-store` (gclid / wbraid / gbraid / ref_id) */
-  const CK = 'rtkclickid-store';
-  if (!document.cookie.split('; ').some(c => c.startsWith(CK + '='))) {
-    const q  = new URLSearchParams(location.search);
-    const id = q.get('rtkcid') || q.get('ref_id') || q.get('gclid')
-             || q.get('wbraid') || q.get('gbraid');
-    if (id) {
-      document.cookie = CK + '=' + id + '; path=/; max-age=' + 90*24*60*60;
-      console.log('[Google/YT] cookie criado:', id);
-    } else {
-      console.warn('[Google/YT] nenhum click-id encontrado na URL');
-    }
+  /* ─── Configurações rápidas ─────────────────────────────────────────── */
+  const EXTRAS = [
+    'cmpid',            // fixo ou dinâmico
+    'utm_campaign',
+    'sub2','sub3','sub4','sub5','sub6','sub7','sub8','sub9','sub10',
+    'wbraid','gbraid',
+    'adgroup','creative','ref_id', // gclid == ref_id
+  ];
+  const POSTBACK_ENDPOINT = 'https://track.onebetter-life.site/postback';
+
+  /* ─── Utilidades ────────────────────────────────────────────────────── */
+  const qs = new URLSearchParams(location.search);
+
+  function getCookie(name) {
+    const m = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
+    return m ? m[1] : null;
+  }
+  const newEventId = () => Date.now().toString();
+  const getExtraParams = () =>
+    EXTRAS
+      .map(p => [p, qs.get(p)])
+      .filter(([,v]) => v)                // só envia se existir
+      .map(([k,v]) => `&${k}=${encodeURIComponent(v)}`)
+      .join('');
+
+  /* ─── Qual “clickId” vamos usar? ────────────────────────────────────── */
+  function getClickId() {
+    // 1) Cookie gerado pelo RedTrack (caso use redirecionamento)
+    const fromCookie = getCookie('rtkclickid-store');
+    if (fromCookie) return fromCookie;
+
+    // 2) Parâmetros padrão do Google Ads / YouTube
+    return qs.get('gclid') || qs.get('wbraid') || qs.get('gbraid') || null;
   }
 
-  /* 2. Helper para disparar postbacks */
-  const getCid   = () => ( '; '+document.cookie )
-                       .match('; '+CK+'=([^;]*)')?.[1] || null;
-  const newEvId  = () => Date.now().toString();
-  function track(type){
-    const cid = getCid();
-    if (!cid) { console.warn('[Google/YT] sem cookie →', type); return; }
+  /* ─── Dispara o postback ────────────────────────────────────────────── */
+  function track(type) {
+    const clickId = getClickId();
+    if (!clickId) {
+      console.warn(`RedTrack: sem clickId – evento “${type}” NÃO enviado.`);
+      return;
+    }
 
-    /* “VSL View” só 1× por click-id */
+    /* ★ “VSL View” só 1x por clickId  ---------------------------------- */
     if (type === 'VSL View') {
-      const flag = 'vslView:' + cid;
-      if (localStorage.getItem(flag)) return;
-      localStorage.setItem(flag,'1');
+      const key = 'vslView:' + clickId;
+      if (localStorage.getItem(key)) {
+        console.log('RedTrack: “VSL View” já enviado para esse clickId.');
+        return;
+      }
+      localStorage.setItem(key, '1');         // marca que já enviou
     }
+    /* ------------------------------------------------------------------ */
 
-    const url = 'https://track.onebetter-life.site/postback'
-              + '?clickid='       + encodeURIComponent(cid)
-              + '&rdtk_event_id=' + newEvId()
-              + '&type='          + encodeURIComponent(type);
+    const url =
+          POSTBACK_ENDPOINT +
+          '?clickid='       + encodeURIComponent(clickId) +
+          '&rdtk_event_id=' + encodeURIComponent(newEventId()) +
+          '&type='          + encodeURIComponent(type) +
+          getExtraParams();                    // envia extras
+
     new Image().src = url;
-    console.log('[Google/YT] postback →', type);
+    console.log('RedTrack: enviado →', type, '|', clickId);
   }
 
-  /* 3. Dispara “VSL View” ao carregar o DOM */
-  document.addEventListener('DOMContentLoaded', () => track('VSL View'));
+  /* ─── Timer + UI do Pitch (inalterado) ──────────────────────────────── */
+  function startOfferTimer() {
+    const els = document.querySelectorAll('.offer-timer-count');
+    if (!els.length) return;
 
-  /* 4. Replica todos os eventos emitidos pelo SmartPlayer */
-  const valid = new Set([
-    'VSL - Play','VSL - 3 View','VSL - 60 View','VSL - 120 View',
-    'VSL - 300 View','VSL - Lead View','VSL - Pitch View'
-  ]);
+    let s = 1800;
+    const int = setInterval(() => {
+      const mm = String(Math.floor(s / 60)).padStart(2, '0');
+      const ss = String(s % 60).padStart(2, '0');
+
+      els.forEach(el => (el.innerHTML = `<h1>${mm}:${ss}</h1>`));
+      document.querySelectorAll('.offer-timer-count h1')
+        .forEach(h1 => (h1.textContent = `Oferta expira em ${mm}:${ss}`));
+
+      if (--s < 0) clearInterval(int);
+    }, 1000);
+  }
+
+  function displayOnPitch() {
+    startOfferTimer();
+    document.querySelectorAll('.display-on-pitch')
+            .forEach(el => el.classList.remove('display-on-pitch'));
+    document.querySelector('.scroll-on-pitch')
+            ?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /* ─── Disparo inicial de “VSL View” ─────────────────────────────────── */
+  window.addEventListener('DOMContentLoaded', () => {
+    const MAX_TRIES = 17;     // ~5 s
+    let tries = 0;
+
+    const attempt = () => {
+      if (getClickId()) {
+        track('VSL View');
+        clearInterval(int);
+      } else if (++tries >= MAX_TRIES) {
+        console.warn('VSL View não disparado: sem clickId após 5 s.');
+        clearInterval(int);
+      }
+    };
+
+    attempt();                // tenta já na 1ª execução
+    const int = setInterval(attempt, 300);
+
+    if (localStorage.getItem('pitchView') === 'true') displayOnPitch();
+  });
+
+  /* ─── Mensagens do SmartPlayer (ConverteAI) ─────────────────────────── */
   window.addEventListener('message', ev => {
-    if (valid.has(ev.data)) track(ev.data);
+    switch (ev.data) {
+      case 'VSL - Lead View' : track('VSL - Lead View');          break;
+
+      case 'VSL - Play':
+        track('VSL - Play');
+        document.querySelectorAll('.hide-on-play')
+                .forEach(el => (el.style.display = 'none'));
+        break;
+
+      case 'VSL - 3 View'    : track('VSL - 3 View');             break;
+      case 'VSL - 60 View'   : track('VSL - 60 View');            break;
+      case 'VSL - 120 View'  : track('VSL - 120 View');           break;
+      case 'VSL - 300 View'  : track('VSL - 300 View');           break;
+
+      case 'VSL - Pitch View':
+        localStorage.setItem('pitchView', 'true');
+        track('VSL - Pitch View');
+        displayOnPitch();
+        break;
+    }
   });
 })();
 </script>
-<!-- ====== /TRACKING ======================================================= -->
-
+<!-- ====== /TRACKING  ==================================================== -->
 
   </body>
 </html>
