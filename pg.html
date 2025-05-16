@@ -415,195 +415,54 @@
     
     <!-- ========== REDTRACK SCRIPT ========== -->
 
-      <!-- ▸ FIX-COOKIE — cria rtkclickid-store a partir do gclid/ref_id ---- -->
-<script>
-(function () {
-  const CK = 'rtkclickid-store';
-
-  /* Verifica se o cookie já existe */
-  const have = document.cookie.split('; ').some(c => c.startsWith(CK + '='));
-  if (have) return;                               // nada a fazer
-
-  /* Procura parâmetros que contenham o click-id */
-  const p   = new URLSearchParams(location.search);
-  const cid = p.get('rtkcid') || p.get('ref_id') || p.get('gclid');
-
-  if (!cid) {
-    console.warn('Fix-cookie: gclid / ref_id não encontrado na URL.');
-    return;
-  }
-
-  /* Grava cookie por 90 dias no domínio do unilpclick */
-  const maxAge = 90 * 24 * 60 * 60;               // 90 dias
-  document.cookie = CK + '=' + cid + '; path=/; max-age=' + maxAge;
-
-  console.log('Fix-cookie: gravado rtkclickid-store =', cid);
-})();
-</script>
-<!-- ▸ /FIX-COOKIE ---------------------------------------------------- -->
-
     
-   <!-- ====== TRACKING – RedTrack (cookie)  x  ConverteAI ====== -->
+  <!--  GOOGLE / YOUTUBE  TRACKING  -->
 <script>
 (function () {
-  /* ─── Utilidades ────────────────────────────────────────── */
-  function getCookie(name) {
-    const m = ('; ' + document.cookie).match('; ' + name + '=([^;]*)');
-    return m ? m[1] : null;
-  }
-  const newEventId = () => Date.now().toString();
+  const qs        = new URLSearchParams(location.search);
+  const isGoogle  = qs.has('gclid') || qs.has('wbraid') || qs.has('gbraid');
+  if (!isGoogle) return;                                // só tráfego Google/YT
 
-  /* ─── Dispara o postback ───────────────────────────────── */
-  function track(type) {
-    const clickId = getCookie('rtkclickid-store');
-    if (!clickId) {
-      console.warn(`RedTrack: cookie ausente – evento “${type}” NÃO enviado.`);
-      return;
-    }
-
-    /* ★ Envia “VSL View” só 1x por clickID ----------------- */
-    if (type === 'VSL View') {
-      const key = 'vslView:' + clickId;
-      if (localStorage.getItem(key)) {
-        console.log('RedTrack: “VSL View” já enviado para esse clickid.');
-        return;
-      }
-      localStorage.setItem(key, '1');   // marca que já enviou
-    }
-    /* ------------------------------------------------------ */
-
-    const url =
-      'https://track.thenew-health.online/postback' +
-      '?clickid='       + encodeURIComponent(clickId) +
-      '&rdtk_event_id=' + encodeURIComponent(newEventId()) +
-      '&type='          + encodeURIComponent(type);
-
-    new Image().src = url;
-    console.log('RedTrack: enviado →', type);
+  /* garante o cookie rtkclickid-store */
+  const CK = 'rtkclickid-store';
+  if (!document.cookie.split('; ').some(c => c.startsWith(CK+'='))) {
+    const cid = qs.get('rtkcid') || qs.get('ref_id') || qs.get('gclid')
+               || qs.get('wbraid') || qs.get('gbraid');
+    if (!cid) { console.warn('[Google] sem click-id'); return; }
+    document.cookie = `${CK}=${cid}; path=/; max-age=${90*24*60*60}`;
   }
 
-  /* ─── Timer + UI do Pitch (inalterado) ─────────────────── */
-  function startOfferTimer() {
-    const els = document.querySelectorAll('.offer-timer-count');
-    if (!els.length) return;
-
-    let s = 1800;
-    const int = setInterval(() => {
-      const mm = String(Math.floor(s / 60)).padStart(2, '0');
-      const ss = String(s % 60).padStart(2, '0');
-
-      els.forEach(el => (el.innerHTML = `<h1>${mm}:${ss}</h1>`));
-      document.querySelectorAll('.offer-timer-count h1')
-        .forEach(h1 => (h1.textContent = `Oferta expira em ${mm}:${ss}`));
-
-      if (--s < 0) clearInterval(int);
-    }, 1000);
+  /* util de postback */
+  const cid = () => (('; '+document.cookie).match('; '+CK+'=([^;]*)')||[])[1];
+  const newId = () => Date.now().toString();
+  function send(type){
+    const clickid = cid(); if (!clickid) return;
+    new Image().src =
+      'https://track.thenew-health.online/postback'
+      + `?clickid=${encodeURIComponent(clickid)}`
+      + `&rdtk_event_id=${newId()}`
+      + `&type=${encodeURIComponent(type)}`;
   }
 
-  function displayOnPitch() {
-    startOfferTimer();
-    document.querySelectorAll('.display-on-pitch')
-            .forEach(el => el.classList.remove('display-on-pitch'));
-    document.querySelector('.scroll-on-pitch')
-            ?.scrollIntoView({ behavior: 'smooth' });
-  }
-
-  /* ─── VSL View: polling até 5 s pelo cookie ────────────── */
-  window.addEventListener('DOMContentLoaded', () => {
-    let tries = 0;
-    const int = setInterval(() => {
-      if (getCookie('rtkclickid-store')) {
-        track('VSL View');
-        clearInterval(int);
-      } else if (++tries >= 17) {
-        clearInterval(int);
-        console.warn('VSL View não disparado: cookie não apareceu em 5 s.');
-      }
-    }, 300);
-
-    if (localStorage.getItem('pitchView') === 'true') {
-      displayOnPitch();
+  /* VSL View 1× por click-id */
+  document.addEventListener('DOMContentLoaded', ()=> {
+    const key = 'vslView:'+cid();
+    if (cid() && !localStorage.getItem(key)) {
+      send('VSL View'); localStorage.setItem(key,'1');
     }
   });
 
-  /* ─── Mensagens do SmartPlayer ─────────────────────────── */
-  window.addEventListener('message', ev => {
-    switch (ev.data) {
-      /* REMOVIDO: 'VSL View' duplicado */
-
-      case 'VSL - Lead View' : track('VSL - Lead View');         break;
-
-      case 'VSL - Play':
-        track('VSL - Play');
-        document.querySelectorAll('.hide-on-play')
-                .forEach(el => (el.style.display = 'none'));
-        break;
-
-      case 'VSL - 3 View'    : track('VSL - 3 View');            break;
-      case 'VSL - 60 View'   : track('VSL - 60 View');           break;
-      case 'VSL - 120 View'  : track('VSL - 120 View');          break;
-      case 'VSL - 300 View'  : track('VSL - 300 View');          break;
-
-      case 'VSL - Pitch View':
-  localStorage.setItem('pitchView', 'true');
-  track('VSL - Pitch View');
-  displayOnPitch();
-  startStockCounter();          // ← ativa o contador
-  break;
-
-    }
+  /* replica eventos do SmartPlayer */
+  const valid = new Set([
+    'VSL - Play','VSL - 3 View','VSL - 60 View','VSL - 120 View',
+    'VSL - 300 View','VSL - Lead View','VSL - Pitch View'
+  ]);
+  window.addEventListener('message', ev=>{
+    if (valid.has(ev.data)) send(ev.data);
   });
 })();
 </script>
-<!-- ====== /TRACKING ======================================================= -->
-
-    <script>
-(function () {
-  const SUB_KEYS = ['subid', 'subid2', 'subid3', 'subid4', 'subid5'];
-
-  /* 1 ▸ captura subIDs da URL na primeira visita e salva */
-  (function saveFromQuery () {
-    const params = new URLSearchParams(location.search);
-    SUB_KEYS.forEach(k => {
-      if (params.has(k) && params.get(k)) {
-        localStorage.setItem(k, params.get(k));
-      }
-    });
-  })();
-
-  /* 2 ▸ helper para recuperar os subIDs salvos como objeto */
-  function getSavedSubIds () {
-    return SUB_KEYS.reduce((acc, k) => {
-      const v = localStorage.getItem(k);
-      if (v) acc[k] = v;
-      return acc;
-    }, {});
-  }
-
-  /* 3 ▸ helper: devolve nova URL com os subIDs anexados           */
-  /*    ‑ aceita string ou objeto URL; devolve string URL final.   */
-  window.appendSubIds = function (inputUrl) {
-    const url = new URL(inputUrl, location.origin);
-    const subs = getSavedSubIds();
-    Object.entries(subs).forEach(([k, v]) => {
-      if (!url.searchParams.has(k)) url.searchParams.set(k, v);
-    });
-    return url.toString();
-  };
-
-  /* 4 ▸ (opcional) exemplo de uso automático em todos <a> internos */
-  /*    ‑ se não quiser, pode remover este bloco.                  */
-  document.addEventListener('click', e => {
-    const a = e.target.closest('a');
-    if (!a) return;
-    /* só altera links dentro do seu domínio */
-    const u = new URL(a.href, location.origin);
-    if (u.origin !== location.origin) return;
-    a.href = appendSubIds(a.href);
-  }, true);
-
-})();
-</script>
+<!--  GOOGLE / YOUTUBE  TRACKING  -->
 
   </body>
 </html>
